@@ -56,6 +56,8 @@ Marketing Campaign Success
 Quest: You have a table of in-app purchases by user. 
 Users that make their first in-app purchase are placed in a marketing campaign where they see call-to-actions for more in-app purchases. 
 Find the number of users that made additional in-app purchases due to the success of the marketing campaign.
+The marketing campaign doesn't start until one day after the initial in-app purchase so users that only made one or multiple purchases on the first day do not count, 
+nor do we count users that over time purchase only the products they purchased on the first day. 
 
 SQL Query: 
 SELECT COUNT(DISTINCT user_id) AS total_users
@@ -68,4 +70,49 @@ FROM marketing_campaign
 WHERE rnk1 > 1 AND rnk2 = 1 
 
 
-The marketing campaign doesn't start until one day after the initial in-app purchase so users that only made one or multiple purchases on the first day do not count, nor do we count users that over time purchase only the products they purchased on the first day. 
+Monthly Percentage Difference
+
+Quest: Given a table of purchases by date, calculate the month-over-month percentage change in revenue. 
+The output should include the year-month date (YYYY-MM) and percentage change, rounded to the 2nd decimal point, 
+and sorted from the beginning of the year to the end of the year.
+The percentage change column will be populated from the 2nd month forward and can be calculated as 
+((this month's revenue - last month's revenue) / last month's revenue)*100.
+
+
+SQL Quesry:
+SELECT DATE_FORMAT (created_at, '%Y-%m') AS YM,
+ROUND((SUM(value) - LAG(SUM(value)) OVER()) / LAG(SUM(value)) OVER() * 100, 2) AS
+revenue_perc_diff
+FROM sf_transactions
+GROUP BY YM
+ORDER BY YM
+
+
+Users by Average Session Time
+
+Quest: Calculate each user's average session time. A session is defined as the time difference between a page_load and page_exit. 
+For simplicity, assume a user has only 1 session per day and if there are multiple of the same events on that day,
+consider only the latest page_load and earliest page_exit. Output the user_id and their average session time.
+
+SQL Query: 
+
+WITH session_time AS (
+SELECT user_id, DATE(timestamp) AS session_date,
+MAX(CASE WHEN action = 'page_load' THEN timestamp ELSE NULL END) AS page_load_time,
+MIN(CASE WHEN action = 'page_exit' THEN timestamp ELSE NULL END) AS page_exit_time
+FROM facebook_web_log
+GROUP BY user_id, session_date
+),
+
+session_time_a AS(
+SELECT user_id,
+session_time,
+TIME_TO_SEC(TIMEDIFF(page_exit_time - page_load_time)) AS total_session_time
+FROM session_time
+WHERE TIMEDIFF(page_exit_time, page_load_time) IS NOT NULL
+)
+
+SELECT user_id, AVG(total_session_time) AS avg_session_time
+FROM session_time_a
+GROUP BY user_id
+
