@@ -1,0 +1,31 @@
+Workers With The Highest Salary
+
+Quest: Find the titles of workers that earn the highest salary. Output the highest-paid title or multiple titles that share the highest salary.
+
+SQL Query : 
+
+with highest_salary AS 
+(
+SELECT 
+t.worker_title,w.salary, RANK() OVER (ORDER BY w.salary DESC) AS rnk
+from worker w
+join title t
+on w.worker_id = t.worker_ref_id
+)
+
+SELECT worker_title AS best_paid_title
+FROM highest_salary
+where rnk = 1
+
+Salaries Difference
+Quest: Write a query that calculates the difference between the highest salaries found in the marketing and engineering departments. Output just the absolute difference in salaries.
+
+SQL Query: 
+
+select abs(m.salary - e.salary) as absolute_difference from
+(select max(salary) as salary from db_employee
+join db_dept on db_employee.department_id = db_dept.id
+where department like '%marketing%') as m,
+(select max(salary) as salary from db_employee
+join db_dept on db_employee.department_id = db_dept.id
+where department like '%engineering%') as e
