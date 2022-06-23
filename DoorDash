@@ -29,3 +29,43 @@ where department like '%marketing%') as m,
 (select max(salary) as salary from db_employee
 join db_dept on db_employee.department_id = db_dept.id
 where department like '%engineering%') as e
+
+Highest Cost Orders
+
+Quest: Find the customer with the highest daily total order cost between 2019-02-01 to 2019-05-01. 
+If customer had more than one order on a certain day, sum the order costs on daily basis. 
+Output customer's first name, total cost of their items, and the date.
+
+SQL Query: 
+
+Select first_name, total_order_cost, order_date
+from (
+Select first_name, SUM(total_order_cost) AS total_order_cost, order_date,
+DENSE_RANK() OVER (ORDER BY SUM(total_order_cost) DESC) AS order_rank
+From customers c
+JOIN orders o
+ON c.id = o.id
+where order_date <  '2019-05-01' AND order_date > 2019-02-01
+Group by c.id, order_date
+) AS ordrnk
+where order_rank = 1
+
+
+Marketing Campaign Success
+
+Quest: You have a table of in-app purchases by user. 
+Users that make their first in-app purchase are placed in a marketing campaign where they see call-to-actions for more in-app purchases. 
+Find the number of users that made additional in-app purchases due to the success of the marketing campaign.
+
+SQL Query: 
+SELECT COUNT(DISTINCT user_id) AS total_users
+FROM (
+SELECT user_id, created_at,
+DENSE_Rank() OVER (PARTITION BY user_id ORDER BY created_at) AS rnk1,
+DENSE_RANK() OVER (PARTITION BY user_id, product_id ORDER BY created_at) AS rnk2
+FROM marketing_campaign
+) t1
+WHERE rnk1 > 1 AND rnk2 = 1 
+
+
+The marketing campaign doesn't start until one day after the initial in-app purchase so users that only made one or multiple purchases on the first day do not count, nor do we count users that over time purchase only the products they purchased on the first day. 
